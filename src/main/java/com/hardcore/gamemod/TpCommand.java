@@ -56,6 +56,18 @@ public class TpCommand {
         );
 
 
+        dispatcher.register(
+                Commands.literal("tparea")
+                        .then(
+                                Commands.argument("x", IntegerArgumentType.integer())
+                                        .then(
+                                                Commands.argument("z", IntegerArgumentType.integer())
+                                                        .executes(TpCommand::teleportCircle)
+                                        )
+                        )
+        );
+
+
     }
 
 
@@ -148,6 +160,52 @@ public class TpCommand {
 
 
         }
+
+        return 1;
+    }
+    private static int teleportCircle(CommandContext<CommandSourceStack> ctx)
+            throws CommandSyntaxException {
+
+        ServerPlayer player = ctx.getSource().getPlayerOrException();
+
+        int x = IntegerArgumentType.getInteger(ctx, "x");
+        int z = IntegerArgumentType.getInteger(ctx, "z");
+
+        Vec3 center= player.getPosition(1);
+        double radius = 10;
+
+        AABB area = new AABB(
+
+                center.x - radius,
+                center.y - radius,
+                center.z -radius,
+
+                center.x + radius,
+                center.y + radius,
+                center.z + radius
+        );
+
+
+        ServerLevel level = player.serverLevel();
+
+        List<LivingEntity> entities = level.getEntitiesOfClass(LivingEntity.class, area);
+
+
+        for(Entity entity: entities){
+            double dx = entity.getX() - center.x;
+            double dz = entity.getZ() - center.z;
+
+            if(dx * dx + dz * dz <= radius * radius) {
+
+                if (entity == player)
+                    continue;
+                entity.teleportTo(x , center.y, z);
+            }
+
+
+        }
+        
+        player.teleportTo(x , center.y, z);
 
         return 1;
     }
