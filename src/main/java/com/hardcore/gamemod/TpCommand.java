@@ -61,10 +61,17 @@ public class TpCommand {
                         .then(
                                 Commands.argument("x", IntegerArgumentType.integer())
                                         .then(
-                                                Commands.argument("z", IntegerArgumentType.integer())
-                                                        .executes(TpCommand::teleportCircle)
-                                        )
-                        )
+                                                Commands.argument("y", IntegerArgumentType.integer())
+
+                                                        .then(
+                                                         Commands.argument("z", IntegerArgumentType.integer())
+                                                                 .then(
+
+                                                                         Commands.argument("radius", IntegerArgumentType.integer())
+                                                                 .executes(TpCommand::teleportCircle)
+
+
+                                        ))))
         );
 
 
@@ -86,6 +93,8 @@ public class TpCommand {
     }
 
 
+
+    //Funcion para tepearse hacia unas cordenadas cobrando experiencia.
     private static int teleportCoords(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
 
         ServerPlayer player = ctx.getSource().getPlayerOrException();
@@ -105,12 +114,14 @@ public class TpCommand {
         return 1;
     }
 
+    //[DEBUG] Obtienes posicion del jugador
     private static void GetPlayerPosition(ServerPlayer player){
 
         Vec3 position = player.getPosition(1);
         player.sendSystemMessage(Component.literal("Tu posicion es ."+ position));
     }
 
+    // [API] [DEBUG] Comando para llamar el debug
     private static int getPlayerPositionCommand(CommandContext<CommandSourceStack> ctx)
             throws CommandSyntaxException {
 
@@ -120,6 +131,7 @@ public class TpCommand {
 
         return 1;
     }
+
 
 
     private static int drawcircle(CommandContext<CommandSourceStack> ctx)
@@ -170,9 +182,10 @@ public class TpCommand {
 
         int x = IntegerArgumentType.getInteger(ctx, "x");
         int z = IntegerArgumentType.getInteger(ctx, "z");
+        int y = IntegerArgumentType.getInteger(ctx, "y");
 
         Vec3 center= player.getPosition(1);
-        double radius = 10;
+        double radius = IntegerArgumentType.getInteger(ctx, "radius");
 
         AABB area = new AABB(
 
@@ -199,16 +212,55 @@ public class TpCommand {
 
                 if (entity == player)
                     continue;
-                entity.teleportTo(x , center.y, z);
+                entity.teleportTo(x , y, z);
             }
 
 
         }
-        
-        player.teleportTo(x , center.y, z);
+
+        player.teleportTo(x , y, z);
 
         return 1;
     }
+
+
+    //Metodo modular para poder obtener todos las entidades vivas dentro de un area circular determinada
+    private  static  List<Entity> GetEntitiesInArea(int radius, Vec3 center, ServerPlayer player) {
+
+        ServerLevel level = player.serverLevel();
+
+        AABB area = new AABB(
+
+                center.x - radius,
+                center.y - radius,
+                center.z - radius,
+
+                center.x + radius,
+                center.y + radius,
+                center.z + radius
+        );
+
+
+        List<LivingEntity> entities = level.getEntitiesOfClass(LivingEntity.class, area);
+        List<Entity> outPutEntities = List.of();
+
+        for (Entity entity : entities) {
+            double dx = entity.getX() - center.x;
+            double dz = entity.getZ() - center.z;
+
+            if (dx * dx + dz * dz <= radius * radius) {
+
+                if (entity == player)
+                    continue;
+
+                outPutEntities.add(entity);
+
+            }
+        }
+
+        return outPutEntities;
+    }
+
 
     private static int drawcircleBlock(CommandContext<CommandSourceStack> ctx)
             throws CommandSyntaxException {
